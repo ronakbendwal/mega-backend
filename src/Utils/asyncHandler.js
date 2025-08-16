@@ -18,11 +18,10 @@
 
 const asyncHandler= (fun)=>{
 
-(req,res,next)=>{
-
+return (req,res,next)=>
+{
   res.resolve(fun(req,res,next))
   .catch((error)=>next(error)); 
-  
 }
 }
 //production grade code look like that 

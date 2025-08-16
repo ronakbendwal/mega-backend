@@ -20,4 +20,12 @@ app.use(express.json({limit:"16kb"}))//express.json allow as to except the data 
 
 app.use(express.static("public"))//for storing the pdf and files and images in our local server and the public inside the the file that we have in our code 
 
+//import route
+
+import router from './Router/user.route.js';
+
+//routes decleration
+
+app.use("/api/v1/users",router);
+
 export {app}

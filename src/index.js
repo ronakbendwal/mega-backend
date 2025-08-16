@@ -13,7 +13,7 @@ ConnectDB()//execute databse connection
     })//if there's any error in the app listening
 
   app.listen(process.env.PORT || 3000,()=>{
-    console.log(`Server Is Running At Port : 4${process.env.PORT}`)
+    console.log(`Server Is Running At Port : ${process.env.PORT}`)
   })//listen app on the port 
 })
 .catch((err)=>{
