@@ -1,5 +1,5 @@
 import { asyncHandler } from "../Utils/asyncHandler.js";
-import { UserModel } from "../Models/User.Model.js";
+import  {UserModel}  from "../Models/User.Model.js";
 import { ApiError } from "../Utils/apiError.js";
 import { uploadOnCloudinary } from "../Utils/cloudnary.js";
 import { ApiResponse } from "../Utils/apiResponse.js";
@@ -14,6 +14,7 @@ import { ApiResponse } from "../Utils/apiResponse.js";
   //check for user creation
   //return response if created if not return error
 
+  console.log(req.files);
   const { fullname,passward,username,email}=req.body
 
   //check if there's field empty or not
@@ -28,7 +29,7 @@ import { ApiResponse } from "../Utils/apiResponse.js";
   }
 
   //user's existence check
-  const existedUser=UserModel.findOne({
+  const existedUser=await UserModel.findOne({
     $or:[{email},{username}]
   })//the usermodel directly make contact with the data base 
   //the .findOne used to find the value that we will give in the model or data base
@@ -41,7 +42,17 @@ import { ApiResponse } from "../Utils/apiResponse.js";
   //now we check the file and images are there in the multer or not
 
   const avtarLocalPath=req.files?.avtar[0]?.path;//using req.files we access the fields we access the field of the multer from page and then if we have fiels then we use avtar[0] which give us the 1st property of the file which contains maybe path and then we check is path here of it is then we store the referance in the variable
-  const coverimageLocalPath=req.files?.coverimage[0]?.path;//using req.files we access the fields we access the field of the multer from page and then if we have fiels then we use avtar[0] which give us the 1st property of the file which contains maybe path and then we check is path here of it is then we store the referance in the variable
+  // const coverimageLocalPath=req.files?.coverimage[0]?.path;//using req.files we access the fields we access the field of the multer from page and then if we have fiels then we use avtar[0] which give us the 1st property of the file which contains maybe path and then we check is path here of it is then we store the referance in the variable
+
+  // for cover image we are not chect the condition so it generate and make error like undefined so here we use the classic if else condition and comment out the previous
+  let coverimageLocalPath;
+  if(req.files && 
+    Array.isArray(req.files.coverimage) && 
+    req.files.coverimage.length>0){
+      coverimageLocalPath=req.files.converimage[0].path;
+    }
+
+    //if there's no any avtar path then throw error
 
   if(!avtarLocalPath){
     throw new ApiError(400,"avtar file is required")
@@ -62,14 +73,14 @@ import { ApiResponse } from "../Utils/apiResponse.js";
     fullname,
     avtar:avtar.url,
     email,
-    coverImage:coverImage?.url || "",
+    coverimage:coverImage?.url || "",
     passward,
     username:username.toLowerCase(),
   })//whenever we create object in DB then throughout our field .create add one more field on the DB which is _id and we can use it for the letter use
 
   //here we get the usercreated referance and also we remove the passward and the refresh token field
   //here we use .select and put all the things and the field that we want to remove 
-  const createdUserReferance=await userObject.findById(userObject._id).select(
+  const createdUserReferance=await UserModel.findById(userObject._id).select(
     "-passward -refreshToken"
   )//here we check the user having the id in the DB then we romove the passward and the refresh token field
 
