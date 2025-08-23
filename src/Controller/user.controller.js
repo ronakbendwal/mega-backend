@@ -3,6 +3,28 @@ import  {UserModel}  from "../Models/User.Model.js";
 import { ApiError } from "../Utils/apiError.js";
 import { uploadOnCloudinary } from "../Utils/cloudnary.js";
 import { ApiResponse } from "../Utils/apiResponse.js";
+
+//this below method we create for generating the tokens 
+const GenerateAccessAndRefreshToken=async (userid) => {//here we use the userid for finding the user details
+
+try{
+  const CurrentUserData=await UserModel.findById(userid);//here by user id we find all the user information to generate token
+
+  const accessToken=await CurrentUserData.generateAccessToken();//generate the access token by using the method that we create before with the current user data
+
+  const refreshToken=await CurrentUserData.generateRefreshToken();//generate the refresh token by using the method that we create before with the current user data
+
+  CurrentUserData.refreshToken=refreshToken;//here we add the refresh token in the data base, the currentuser data comes from the mongoose so we can add it directly
+
+  await CurrentUserData.save({validateBeforeSave:false})//here we save the refresh token in the user data in dataBase, the validate before save is for we don't need any type of validation in refresh token save
+
+  return {accessToken,refreshToken}
+
+}catch(error){
+  throw new ApiError(500,"something went wrong while generating access and refresh token")
+}
+}
+
  const registerUser =asyncHandler(async (req,res)=>{
   //get user data from frontend
   //apply validation => check no empty
@@ -15,14 +37,14 @@ import { ApiResponse } from "../Utils/apiResponse.js";
   //return response if created if not return error
 
   console.log(req.files);
-  const { fullname,passward,username,email}=req.body
+  const { fullname,password,username,email}=req.body
 
   //check if there's field empty or not
   // if(email==""){
   //   throw new ApiError(400,"field are empty");
   // }
 
-  if([email,passward,username,fullname].some((field)=>
+  if([email,password,username,fullname].some((field)=>
     field?.trim()==""
   )){
     throw new ApiError(400,"all field's are required");
@@ -74,14 +96,14 @@ import { ApiResponse } from "../Utils/apiResponse.js";
     avtar:avtar.url,
     email,
     coverimage:coverImage?.url || "",
-    passward,
+    password,
     username:username.toLowerCase(),
   })//whenever we create object in DB then throughout our field .create add one more field on the DB which is _id and we can use it for the letter use
 
   //here we get the usercreated referance and also we remove the passward and the refresh token field
   //here we use .select and put all the things and the field that we want to remove 
   const createdUserReferance=await UserModel.findById(userObject._id).select(
-    "-passward -refreshToken"
+    "-password -refreshToken"
   )//here we check the user having the id in the DB then we romove the passward and the refresh token field
 
   if(!createdUserReferance){
@@ -93,5 +115,113 @@ import { ApiResponse } from "../Utils/apiResponse.js";
   )//here in the json we can send the field by our own like in object we can send created user but we have and organized way for this which is we created the response class for this
   })
 
+  const loginUser=asyncHandler(async(req,res)=>{
+    //get all the data from the body
+    //give access via username or email
+    //validate if any field is empty or not 
+    //find the user if have and user the go forward else show error
+    //passward check if same then go forward else show error
+    //generate access and refresh token 
+    //send cookies
+    //send response user logined
 
-export {registerUser}
+    //get the element from the req body
+    const { password, username, email } = req.body
+
+    //if there's no username or no any passward then we simply check and throw an error
+    if(!(username || email)){//here we do logical mistake 
+      throw new ApiError(400,"user name or passward is required")
+    }
+
+    //here we find the user in the data base using any one from both the fiend that we have currently present
+    const CurrentUser=await UserModel.findOne({
+      $or:[{email},{username}]
+    })
+
+    //if we dont have the user then we show the below error
+    if(!CurrentUser){
+      throw new ApiError(404,"user does not exist")
+    }
+
+    //now check the passward is correct or not 
+    //this give us the true or false after checking the passward
+    const isPasswardsame=await CurrentUser.isPasswardCorrect(password)
+
+  
+    //if the isPasswardsame is false then we throw the error below 
+    if(!isPasswardsame){
+      throw new ApiError(401,"the passward is incorrect")
+    }
+
+    //generate tokens using the method we created
+    const {accessToken,refreshToken}=await GenerateAccessAndRefreshToken(CurrentUser._id)
+
+    //now we sent cookie and we know we don't need to sent the passward in the cookie response
+    //now we directly sent the current user as a cookie but we call the refresh token is created after getting the current user info so we again call the data base and get all the info and now we also get all the credential that we added recently
+
+    const loggedinUser=await UserModel.findById(CurrentUser._id)
+    .select("-password -refreshToken")
+
+    //now we sent cookie for sending cookie we have to design some options
+    const options={
+      httpOnly:true,
+      recure:true,
+    }//the cookie is btdefault editable so anyone can modify the cookie for preventing this and want the cookies only modified by the server we use this options
+
+    return res
+    .status(200)
+    .cookie("accessToken",accessToken,options)//here we sent cookie
+    .cookie("refreshToken",refreshToken,options)//here also we sent cookie
+    .json(
+      new ApiResponse(
+        200,//the status code 
+
+        {//here we sent data in response
+          user:loggedinUser,
+          refreshToken,
+          accessToken,
+        },
+        "User Logged In Sucessfull"//it is the message 
+
+      )//it is the json response and we use api response class for make our work easy
+    )
+  })
+
+  const logoutUser=asyncHandler(async(req,res)=>{
+    //clear all the cookie
+    //remove the refesh token from the database
+    
+    //now we can simply get all the user database field here using below 
+    
+    //if we use usermodel.findById then we have the get the whole user and the delete the token and then again save validation false type work have to do for ignoring all of this we use another method
+
+    await UserModel.findByIdAndUpdate(
+      req.user._id,//here we find the user by id
+      {
+        $set:{
+          refreshToken:undefined//here we update the value 
+        }
+      },
+      {
+        new:true//here we say in response we want the updated vlaue only
+      }
+    )//here we remove the refesh token from the data base
+
+    const options={
+      httpOnly:true,
+      secure:true,
+    }
+    return res.status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(
+      new ApiResponse(200,{},"User Logout Sucessfully ")
+    )
+  })
+
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+}

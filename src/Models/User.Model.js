@@ -19,7 +19,7 @@ const UserSchema=new mongoose.Schema({
     lowercase:true
   },
 
-  passward:{
+  password:{
     type:String,
     required:[true,"passward is required"],
   },
@@ -52,20 +52,27 @@ const UserSchema=new mongoose.Schema({
 
 },{timestamps:true});//all data field
 
+
+
 UserSchema.pre("save",async function (next) {//we use next cuz here we use middleware
 //process with data base take time so we use async
 
-  if(!this.isModified("passward")) return next();//if passward is not change then we dont have need to again encrypt our passward
+  if(!this.isModified("password")) return next();//if passward is not change then we dont have need to again encrypt our passward
 
-  this.passward=await bcrypt.hash(this.passward,10);
+  this.password=await bcrypt.hash(this.password,10);
   next();
 });//hook for passward encryption
 
-UserSchema.methods.isPasswardCorrect=async function (passward){
 
-return await bcrypt.compare(passward,this.passward);//comparasion logic 
+
+UserSchema.methods.isPasswardCorrect=async function (password){
+
+return await bcrypt.compare(password,this.password);//comparasion logic 
 
 }//custom method for compare passward with encrypt passward
+
+
+
 
 UserSchema.methods.generateAccessToken=function (){
   return jwt.sign(
@@ -84,6 +91,9 @@ UserSchema.methods.generateAccessToken=function (){
   )
 }//custom method for generate access token
 
+
+
+
 UserSchema.methods.generateRefreshToken=function (){
   return jwt.sign(
     {
@@ -93,12 +103,15 @@ UserSchema.methods.generateRefreshToken=function (){
 
     },//it is the payload that comes from the database we use in generating token
 
-    process.env.ACCESS_TOKEN_SECRETKEY,//it is secret of the token
+    process.env.REFRESH_TOKEN_SECRETKEY,//it is secret of the token
 
     {
-      expiresin:process.env.ACCESS_TOKEN_EXPIREY
+      expiresin:process.env.REFRESH_TOKEN_EXPIREY
     },//the expirey always write in the object
   )
 }//custom method for generate refresh toke 
+
+
+
 
 export const UserModel= mongoose.model("UserModel",UserSchema);
