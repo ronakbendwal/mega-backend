@@ -86,7 +86,7 @@ UserSchema.methods.generateAccessToken=function (){
     process.env.ACCESS_TOKEN_SECRETKEY,//it is secret of the token
 
     {
-      expiresin:process.env.ACCESS_TOKEN_EXPIREY
+      expiresIn:process.env.ACCESS_TOKEN_EXPIREY
     },//the expirey always write in the object
   )
 }//custom method for generate access token
@@ -106,7 +106,7 @@ UserSchema.methods.generateRefreshToken=function (){
     process.env.REFRESH_TOKEN_SECRETKEY,//it is secret of the token
 
     {
-      expiresin:process.env.REFRESH_TOKEN_EXPIREY
+      expiresIn:process.env.REFRESH_TOKEN_EXPIREY
     },//the expirey always write in the object
   )
 }//custom method for generate refresh toke 
