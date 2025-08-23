@@ -1,5 +1,10 @@
 import {Router} from "express"
-import { loginUser, logoutUser, registerUser} from "../Controller/user.controller.js";
+import {
+   loginUser,
+   logoutUser,
+   refreshAccessToken, 
+   registerUser
+  } from "../Controller/user.controller.js";
 import { upload } from "../MiddleWare/multer.middleware.js";
 import { verifyJWT } from "../MiddleWare/auth.middleware.js";
 const router=Router();
@@ -20,8 +25,11 @@ router.post("/register",upload.fields([
 //both the syntex do the same thing but we use the upper one
 router.post("/login",loginUser)
 
-//secured route the bwlow one
+//secured route here below cuz we only use it when the user is logged in
+
 router.post("/logout",verifyJWT,logoutUser)//when we hit on this route then first the middleware execute go to middleware for remaining story
+
+router.post("/refresh",refreshAccessToken)
 
 
 export default router;

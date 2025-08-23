@@ -14,7 +14,10 @@ export const verifyJWT=asyncHandler(async(req,res,next)=>{
   }
 
   //if we have token then we check using jwt and in response we get the decoded field value of token
-  const decodedToken= jwt.verify(token, process.env.ACCESS_TOKEN_SECRETKEY)
+  const decodedToken= jwt.verify(
+    token, 
+    process.env.ACCESS_TOKEN_SECRETKEY
+  )
 
   //in decodec token we get all the value's so that we can use it further
   const user =await UserModel.findById(decodedToken?._id).select("-password -refreshToken")
