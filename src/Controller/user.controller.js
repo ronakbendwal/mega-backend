@@ -271,10 +271,163 @@ try{
     }
   })
 
+  const changeCurrentPassward=asyncHandler(async(req,res)=>{
+    //get old passward from the user
+    //also the new passward
+    //find the user is loged in or not
+    //check the passward is same as the current user password or not
+    //if same then update the new passward
+    //if not then show error
+    //save the user
+
+    const {oldPassward,newPassward}=req.body
+
+    const currentUser=await UserModel.findById(req.user?._id)
+
+    if(!currentUser){
+      throw new ApiError(401,"invalid user ")
+    }
+
+    const checkPassword=user.isPasswardCorrect(oldPassward)
+
+    if(!checkPassword){
+      throw new ApiError(401,"invalid password")
+    }
+
+    user.password=newPassward
+    await user.save({validateBeforeSave:false});
+
+    return res.status(200)
+    .json(new ApiResponse(
+      200,
+      {},
+      "passward changed sucessfully"
+    ))
+  })
+
+  const getCuttentUser=asyncHandler(async(req,res)=>{
+    return res.status(200)
+    .json(
+       new ApiResponse(
+        200,req.user,"Current User Fatch Sucessfully"
+       )
+    )
+  })
+
+  const updateUserInfo=asyncHandler(async(req,res)=>{
+
+    const {fullname,email}=req.body
+
+   const user =await  UserModel.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set:{
+          email:email,//normal assignment method
+          fullname,//short handy method when the assignment and assigned field are same
+        }
+      }, 
+      { new:true }
+    ).select("-password")//here we save data base coll for removign the password from response
+    //otherwise we have to again call data base and select the avoiding fields
+
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { user:user },
+        "Information Sucessfully Changed"
+      )
+    )
+  })
+
+
+    const updateUserAvtar=asyncHandler(async(req,res)=>{
+    //here we get the file path from the multer
+    const newAvtarLocalPath=req.file?.path
+
+    //check it is present or not
+    if(!newAvtarLocalPath){
+      throw new ApiError(401, "Avart File Is Missing ")
+    }
+
+    //if present then upload this file on the cloudinary
+    const avtar=await uploadOnCloudinary(newAvtarLocalPath)
+
+    //if we not get the url after uploading the show error
+    if(!avtar.url){
+      throw new ApiError(400,"Error While Uploading Avtar")
+    }
+
+    //now we update the avtar field in the dataBase
+    const user=await UserModel.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set:{
+          avtar:avtar.url
+        }
+      },{new :true}
+    ).select(-"password")
+
+    return res.
+    ststus(200)
+    .json(
+      new ApiResponse(
+        200,
+        {user},
+        "Avtar Sucessfully Updated"
+      )
+    )
+
+  })
+
+    const updateUserCoverImage=asyncHandler(async(req,res)=>{
+    //here we get the file path from the multer
+    const newCoverImageLocalPath=req.file?.path
+
+    //check it is present or not
+    if(!newCoverImageLocalPath){
+      throw new ApiError(401, "Cover-Image File Is Missing ")
+    }
+
+    //if present then upload this file on the cloudinary
+    const coverImage=await uploadOnCloudinary(newCoverImageLocalPath)
+
+    //if we not get the url after uploading the show error
+    if(!coverImage.url){
+      throw new ApiError(400,"Error While Uploading Cover-Image File")
+    }
+
+    //now we update the avtar field in the dataBase
+    const user=await UserModel.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set:{
+          coverimage:coverImage.url
+        }
+      },{new :true}
+    ).select(-"password")
+
+    return res.
+    ststus(200)
+    .json(
+      new ApiResponse(
+        200,
+        {user},
+        "Cover-Image Sucessfully Updated"
+      )
+    )
+
+  })
 
 export {
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
+  changeCurrentPassward,
+  getCuttentUser,
+  updateUserInfo,
+  updateUserAvtar,
+  updateUserCoverImage,
 }
