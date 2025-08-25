@@ -38,6 +38,22 @@ router.post("/logout",verifyJWT,logoutUser)//when we hit on this route then firs
 
 router.post("/refresh",refreshAccessToken)
 
+//here we change 
+router.post("/change-password",verifyJWT,changeCurrentPassward)
+
+//here we want to update something 
+router.route("/update-user-info").patch(verifyJWT,updateUserInfo)
+
+router.route("/update-user-avtar").patch(verifyJWT,upload.single("avtar"),updateUserAvtar)
+
+router.route("/update-user-coverimage").patch(verifyJWT,upload.single("converimage"),updateUserCoverImage)
+
+//here below we get 
+router.get("/c/:username",verifyJWT,getUserChannelProfile)
+
+router.get("/watch-history",verifyJWT,getWatchHistory)
+
+router.get("/current-user",verifyJWT,getCurrentUser)
 
 
 export default router;
