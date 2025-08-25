@@ -12,4 +12,4 @@ const SubscriptionSchema=new Schema({
   }
 },{timestamps:true})
 
-export const SubscriptionModel=model("SubscriptionModel",SubscriptionSchema)
+export const Subscription=model("Subscription",SubscriptionSchema)

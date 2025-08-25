@@ -4,6 +4,7 @@ import { ApiError } from "../Utils/apiError.js";
 import { uploadOnCloudinary } from "../Utils/cloudnary.js";
 import { ApiResponse } from "../Utils/apiResponse.js";
 import jwt from "jsonwebtoken"
+import { application } from "express";
 //this below method we create for generating the tokens 
 const GenerateAccessAndRefreshToken=async (userid) => {//here we use the userid for finding the user details
 
@@ -322,7 +323,7 @@ try{
       req.user?._id,
       {
         $set:{
-          email:email,//normal assignment method
+          email:email,//normal assignment  method
           fullname,//short handy method when the assignment and assigned field are same
         }
       }, 
@@ -384,7 +385,7 @@ try{
     const updateUserCoverImage=asyncHandler(async(req,res)=>{
     //here we get the file path from the multer
     const newCoverImageLocalPath=req.file?.path
-
+    
     //check it is present or not
     if(!newCoverImageLocalPath){
       throw new ApiError(401, "Cover-Image File Is Missing ")
@@ -408,6 +409,7 @@ try{
       },{new :true}
     ).select(-"password")
 
+
     return res.
     ststus(200)
     .json(
@@ -420,6 +422,82 @@ try{
 
   })
 
+
+  const getUserChannelProfile=asyncHandler(async(req,res)=>{
+    const {username}=req.params//here we get the username from the fiels that's why we usr .params here
+
+    if(!username?.trim()){//if the value is not true
+      throw new ApiError(401," Username Is Missing ")
+    }
+
+    // UserModel.find({username})//here we are not use this cuz it is costly process have to optimize it
+
+    //the new one using aggregate
+    const channel=await UserModel.aggregate([{
+      $match: {
+        username:username?.toLowerCase()
+      }
+    },
+    {
+      $lookup: {
+        from:"subscriptions",
+        localField:"_id",//here we use _id cuz we check all the channel having same _id
+        foreignField:"channel",
+        as:"havingSubscriberData"
+      }
+    },
+    {
+    $lookup: {
+      from: "subscriptions",
+      localField:"_id",
+      foreignField:"subscriber",
+      as:"channelThatWeSubscribed"
+
+    }
+  },
+  {
+    $addFields: {
+      subscriberCount: {
+        $size:"$havingSubscriberData"//we use doller cuz the green one is now field
+      },
+      channelsSubscribedToCount:{
+        $size: "$channelThetWeSubscribed"
+      },
+      isSubscribed: {
+        $cond:{
+          if:{$in:[req.user?._id,"$havingSubscriberData.subscriber"]},
+          then:true,
+          else:false,
+        }
+      }
+    }
+  },
+{
+  $project: {
+    username:1,//here we convert the flag from 0 to 1
+    fullname:1,
+    channelsSubscribedToCount:1,
+    subscriberCount:1,
+    isSubscribed:1,
+    avtar:1,
+    coverimage:1,
+    email:1,
+  }//the projection allow as to change the field name and which field we want to include /exclude and many other output and pass related operation we can perform here
+
+}])//the aggregate is a method for aggregation pipeline and it takes an array of object the object is nothing but just a pipeline
+if(!channel?.length){
+  throw new ApiError(400,"Channel Does Not Exist")
+}
+
+return res.status(200)
+.json(
+  new ApiResponse(
+    200,
+    channel[0],
+    "User Channel Fatched Sucessfully"
+  )
+)
+})
 export {
   registerUser,
   loginUser,
@@ -430,4 +508,6 @@ export {
   updateUserInfo,
   updateUserAvtar,
   updateUserCoverImage,
+  getUserChannelProfile,
+
 }
