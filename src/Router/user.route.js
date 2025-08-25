@@ -1,9 +1,16 @@
 import {Router} from "express"
 import {
+  changeCurrentPassward,
+   getCurrentUser,
+   getUserChannelProfile,
+   getWatchHistory,
    loginUser,
    logoutUser,
    refreshAccessToken, 
-   registerUser
+   registerUser,
+   updateUserAvtar,
+   updateUserCoverImage,
+   updateUserInfo
   } from "../Controller/user.controller.js";
 import { upload } from "../MiddleWare/multer.middleware.js";
 import { verifyJWT } from "../MiddleWare/auth.middleware.js";
@@ -30,6 +37,7 @@ router.post("/login",loginUser)
 router.post("/logout",verifyJWT,logoutUser)//when we hit on this route then first the middleware execute go to middleware for remaining story
 
 router.post("/refresh",refreshAccessToken)
+
 
 
 export default router;

@@ -306,7 +306,7 @@ try{
     ))
   })
 
-  const getCuttentUser=asyncHandler(async(req,res)=>{
+  const getCurrentUser=asyncHandler(async(req,res)=>{
     return res.status(200)
     .json(
        new ApiResponse(
@@ -341,7 +341,6 @@ try{
       )
     )
   })
-
 
     const updateUserAvtar=asyncHandler(async(req,res)=>{
     //here we get the file path from the multer
@@ -422,8 +421,7 @@ try{
 
   })
 
-
-  const getUserChannelProfile=asyncHandler(async(req,res)=>{
+ const getUserChannelProfile=asyncHandler(async(req,res)=>{
     const {username}=req.params//here we get the username from the fiels that's why we usr .params here
 
     if(!username?.trim()){//if the value is not true
@@ -497,17 +495,71 @@ return res.status(200)
     "User Channel Fatched Sucessfully"
   )
 )
-})
+  })
+
+ const getWatchHistory=asyncHandler(async(req,res)=>{
+  const history=await UserModel.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id)//when we query in mongo db then the _id is converted in to the object id but in aggregation pipeline we sent the raw code that's the reason we have to create the new mongoose id using mongoose id 
+      }
+    },
+    {
+      $lookup : 
+      {
+        from:"videomodels",
+        localField:"watchHistory",
+        foreignField:"_id",
+        as:"watchhistory",
+        pipeline:[//the 1st nasted pipeline
+          {
+            $lookup:
+              {
+                from:"usermodels",
+                localField:"owner",
+                foreignField:"_id",
+                as:"owner",
+                $project ://the 2nd nasted pipeline
+                 {
+                  fullname:1,
+                  avtar:1,
+                  username:1,
+                 }
+              }
+           },
+           {
+            $addFields :{
+              owner:{
+                $first:"$owner"
+              }
+            }
+           }
+        ]
+      }
+    },
+  ])
+
+  return res.status(200)
+  .json(
+    new ApiResponse(
+      200,
+      history[0].watchHistory,
+      "Here we get the watch history"
+    )
+  )
+ })
+
 export {
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
   changeCurrentPassward,
-  getCuttentUser,
+  getCurrentUser,
   updateUserInfo,
   updateUserAvtar,
   updateUserCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 
 }
