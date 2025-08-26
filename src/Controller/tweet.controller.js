@@ -17,7 +17,8 @@ if(!user?.trim()){
 
 const tweetObject=await TweetModel.create(
   {
-    content
+    content,
+    owner:user,
   }
 )
 
@@ -41,11 +42,13 @@ const deleteTweet=asyncHandler(async(req,res)=>{
   //here our tweet deleted
   try{
     const tweetId=req.params._id;
-  const isDeleted=await TweetModel.findByIdAndDelete(tweetId)
+  const tweet=await TweetModel.findByIdAndDelete(tweetId)
 
-  if(!isDeleted){
+  if(!tweet){
     throw new ApiError(401,"Tweet Not Found")
   }
+
+  await tweet.deleteOne()
 
   return res.status(200)
   .json(
